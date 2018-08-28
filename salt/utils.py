@@ -73,12 +73,15 @@ def load_mask_cached(cache, preprocess, mask_db, shape, path):
         cache[path] = mask
         return mask
 
+def resize(size, image):
+    return cv2.resize(image, size, interpolation=cv2.INTER_NEAREST)
+
 def pipeline(mask_db, cache, mask_cache, path):
-    preprocess = lambda image: image[:, :, [1]]
+    preprocess = lambda image: resize((128, 128), image[:, :, [1]])[:, :, None]
     image = read_image_cached(cache, preprocess, path)
     image = normalize(image)
     image = channels_first(image)
-    preprocess = lambda mask: mask
+    preprocess = lambda mask: resize((128, 128), mask)
     mask = load_mask_cached(mask_cache, preprocess, mask_db, (101, 101), path)
     return image, mask
 
