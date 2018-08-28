@@ -53,7 +53,7 @@ def fit(num_epochs=100, limit=None, batch_size=16, lr=.001, checkpoint_path=None
         model = Linknet(2)
 
     model = as_cuda(model)
-    optimizer = torch.optim.Adam(filter(lambda param: param.requires_grad, model.parameters()), lr)
+    optimizer = torch.optim.Adam(filter(lambda param: param.requires_grad, model.parameters()), lr, weight_decay=1e-4)
     model_checkpoint = ModelCheckpoint(model, 'linknet', logger)
     train_generator = get_train_generator(batch_size, limit)
     cyclic_lr = CyclicLR(cycle_iterations=len(train_generator) * 2, min_lr=0.0001, max_lr=0.005, optimizer=optimizer, logger=logger)

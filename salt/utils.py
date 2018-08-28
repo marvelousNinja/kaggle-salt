@@ -22,6 +22,9 @@ def get_images_in(path):
 def read_image(path):
     return cv2.cvtColor(cv2.imread(path), cv2.COLOR_BGR2RGB)
 
+def fliplr(image):
+    return np.fliplr(image)
+
 def read_image_cached(cache, preprocess, path):
     image = cache.get(path)
     if image is not None:
@@ -83,6 +86,9 @@ def pipeline(mask_db, cache, mask_cache, path):
     image = channels_first(image)
     preprocess = lambda mask: resize((128, 128), mask)
     mask = load_mask_cached(mask_cache, preprocess, mask_db, (101, 101), path)
+    if np.random.rand() < .5:
+        image = fliplr(image)
+        mask = fliplr(mask)
     return image, mask
 
 def confusion_matrix(pred_labels, true_labels, labels):
