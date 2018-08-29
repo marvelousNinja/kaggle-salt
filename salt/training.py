@@ -4,6 +4,7 @@ from tqdm import tqdm
 
 from salt.utils import from_numpy
 from salt.utils import to_numpy
+from salt.utils import as_tuple
 
 def fit_model(
         model,
@@ -44,10 +45,12 @@ def fit_model(
             inputs, gt = from_numpy(inputs), from_numpy(gt)
             outputs = model(inputs)
             val_loss += loss_fn(outputs, gt).data[0]
-            all_outputs.append(to_numpy(outputs))
+            all_outputs.append(list(map(to_numpy, as_tuple(outputs))))
         val_loss /= num_batches
 
+        all_outputs = list(map(np.concatenate, zip(*all_outputs)))
+
         if on_validation_end:
-            on_validation_end(train_loss, val_loss, np.concatenate(all_outputs), np.concatenate(all_gt))
+            on_validation_end(train_loss, val_loss, all_outputs, np.concatenate(all_gt))
 
         logger(f'epoch {epoch} train loss {train_loss:.5f} - val loss {val_loss:.5f}')

@@ -30,10 +30,22 @@ def jaccard_loss(logits, labels):
     union = probs.sum((1, 2)) + labels.sum((1, 2)) - intersection
     return (1 - (intersection + smooth) / (union + smooth)).mean()
 
-def compute_loss(logits, labels):
-    return jaccard_loss(logits, labels) * 0.5 + torch.nn.functional.cross_entropy(logits, labels.long()) * 0.5
+def compute_loss(outputs, labels):
+    image_logits = outputs[1]
+    image_labels = labels.sum(dim=(1,2)) > 0
+    image_loss = torch.nn.functional.cross_entropy(image_logits, image_labels.long())
 
-def on_validation_end(history, visualize, image_logger, logger, model_checkpoint, train_loss, val_loss, logits, gt):
+    if image_labels.sum() > 0:
+        mask_logits = outputs[0][image_labels]
+        mask_labels = labels[image_labels]
+        mask_loss = jaccard_loss(mask_logits, mask_labels)
+    else:
+        mask_loss = 0
+
+    return image_loss + mask_loss
+
+def on_validation_end(history, visualize, image_logger, logger, model_checkpoint, train_loss, val_loss, outputs, gt):
+    logits = outputs[0]
     if visualize:
         history.setdefault('train_losses', []).append(train_loss)
         history.setdefault('val_losses', []).append(val_loss)

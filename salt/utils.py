@@ -143,6 +143,12 @@ def from_numpy(obj):
     else:
         return torch.FloatTensor(obj)
 
+def as_tuple(obj):
+    if isinstance(obj, tuple):
+        return obj
+    else:
+        return tuple([obj])
+
 def to_numpy(tensor):
     return tensor.data.cpu().numpy()
 
