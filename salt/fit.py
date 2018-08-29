@@ -25,22 +25,6 @@ from salt.utils import visualize_predictions
 def compute_loss(outputs, labels):
     return torch.nn.functional.cross_entropy(outputs, labels.long())
 
-def on_validation_end(history, visualize, image_logger, logger, model_checkpoint, train_loss, val_loss, outputs, gt):
-    image_logits = outputs[1]
-    predicted_image_labels = np.argmax(image_logits, axis=1)
-
-    mask_logits = outputs[0]
-    mask_logits[predicted_image_labels == 0, 0, :, :] = 100
-    mask_logits[predicted_image_labels == 0, 1, :, :] = -100
-
-    if visualize:
-        history.setdefault('train_losses', []).append(train_loss)
-        history.setdefault('val_losses', []).append(val_loss)
-        visualize_predictions(image_logger, mask_logits, gt)
-        visualize_learning_curve(image_logger, history['train_losses'], history['val_losses'])
-    logger(confusion_matrix(np.argmax(mask_logits, axis=1), gt, [0, 1]))
-    model_checkpoint.step(val_loss)
-
 def fit(num_epochs=100, limit=None, batch_size=16, lr=.001, checkpoint_path=None, telegram=False, visualize=False):
     torch.backends.cudnn.benchmark = True
     np.random.seed(1991)

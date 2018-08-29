@@ -90,22 +90,6 @@ def pipeline(mask_db, cache, mask_cache, path):
     image = channels_first(image)
     return image, mask
 
-def visualize_predictions(image_logger, logits, gt):
-    num_samples = min(len(gt), 8)
-    gt = gt[:num_samples]
-    logits = logits[:num_samples]
-    logits -= np.expand_dims(np.max(logits, axis=1), axis=1)
-    probs = (np.exp(logits) / np.expand_dims(np.sum(np.exp(logits), axis=1), axis=1))[:, 1, :, :]
-
-    for i in range(num_samples):
-        plt.subplot(2, num_samples, i + 1)
-        plt.imshow(probs[i])
-        plt.subplot(2, num_samples, num_samples + i + 1)
-        plt.imshow(gt[i])
-    plt.gcf().tight_layout()
-    plt.subplots_adjust(hspace=0.1, wspace=0.1)
-    image_logger(plt.gcf())
-
 def get_mask_db(path):
     return pd.read_csv(path)
 
