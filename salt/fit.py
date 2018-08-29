@@ -36,9 +36,9 @@ def compute_loss(outputs, labels):
     image_loss = torch.nn.functional.cross_entropy(image_logits, image_labels.long())
 
     if image_labels.sum() > 0:
-        mask_logits = outputs[0][image_labels]
-        mask_labels = labels[image_labels]
-        mask_loss = jaccard_loss(mask_logits, mask_labels)
+        mask_logits = outputs[0][image_labels == 1]
+        mask_labels = labels[image_labels == 1]
+        mask_loss = torch.nn.functional.cross_entropy(mask_logits, mask_labels.long())
     else:
         mask_loss = 0
 
