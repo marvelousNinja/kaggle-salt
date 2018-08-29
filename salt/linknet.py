@@ -42,9 +42,6 @@ class Linknet(torch.nn.Module):
             torch.nn.ConvTranspose2d(32, num_classes, (2, 2), stride=2)
         )
 
-        self.avgpool = torch.nn.AvgPool2d(4)
-        self.fc = torch.nn.Linear(512, num_classes)
-
     def forward(self, x):
         x = self.triplet(x)
         x = self.resnet.conv1(x)
@@ -55,16 +52,8 @@ class Linknet(torch.nn.Module):
         x2 = self.resnet.layer2(x1)
         x3 = self.resnet.layer3(x2)
         x4 = self.resnet.layer4(x3)
-
-        # Mask prediction
         x = self.decoder1(x4) + x3
         x = self.decoder2(x) + x2
         x = self.decoder3(x) + x1
         x = self.decoder4(x)
-
-        # Image classificaiton
-        x_ = self.avgpool(x4)
-        x_ = x_.view(x_.size(0), -1)
-        x_ = self.fc(x_)
-
-        return self.classifier(x), x_
+        return self.classifier(x)

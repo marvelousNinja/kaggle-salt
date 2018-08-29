@@ -4,7 +4,6 @@ from tqdm import tqdm
 
 from salt.utils import from_numpy
 from salt.utils import to_numpy
-from salt.utils import as_tuple
 
 def fit_model(
         model,
@@ -14,11 +13,11 @@ def fit_model(
         loss_fn,
         num_epochs,
         logger,
-        on_validation_end=None,
-        on_batch_end=None
+        callbacks=[]
     ):
 
     for epoch in tqdm(range(num_epochs)):
+        logs = {}
         train_loss = 0
         num_batches = len(train_generator)
         model.train()
@@ -30,9 +29,9 @@ def fit_model(
             loss.backward()
             optimizer.step()
             train_loss += loss.data[0]
-            if on_batch_end: on_batch_end()
+            for callback in callbacks: callback.on_train_batch_end()
 
-        train_loss /= num_batches
+        logs['train_loss'] = train_loss / num_batches
 
         val_loss = 0
         all_outputs = []
@@ -45,12 +44,18 @@ def fit_model(
             inputs, gt = from_numpy(inputs), from_numpy(gt)
             outputs = model(inputs)
             val_loss += loss_fn(outputs, gt).data[0]
-            all_outputs.append(list(map(to_numpy, as_tuple(outputs))))
-        val_loss /= num_batches
 
-        all_outputs = list(map(np.concatenate, zip(*all_outputs)))
+            if isinstance(outputs, tuple):
+                all_outputs.append(list(map(to_numpy, outputs)))
+            else:
+                all_outputs.append(to_numpy(outputs))
+        logs['val_loss'] = val_loss / num_batches
 
-        if on_validation_end:
-            on_validation_end(train_loss, val_loss, all_outputs, np.concatenate(all_gt))
+        if isinstance(all_outputs[0], tuple):
+            all_outputs = list(map(np.concatenate, zip(*all_outputs)))
+        else:
+            all_outputs = np.concatenate(all_outputs)
 
-        logger(f'epoch {epoch} train loss {train_loss:.5f} - val loss {val_loss:.5f}')
+        all_gt = np.concatenate(all_gt)
+        for callback in callbacks: callback.on_validation_end(logs, all_outputs, all_gt)
+        logger(f"epoch {epoch} train loss {logs['train_loss']:.5f} - val loss {logs['val_loss']:.5f}")

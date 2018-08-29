@@ -6,7 +6,6 @@ import numpy as np
 import pandas as pd
 import torch
 import matplotlib.pyplot as plt
-from tabulate import tabulate
 
 def get_train_validation_holdout_split(records):
     np.random.shuffle(records)
@@ -91,21 +90,6 @@ def pipeline(mask_db, cache, mask_cache, path):
     image = channels_first(image)
     return image, mask
 
-def confusion_matrix(pred_labels, true_labels, labels):
-    pred_labels = pred_labels.reshape(-1)
-    true_labels = true_labels.reshape(-1)
-    columns = [list(map(lambda label: f'Pred {label}', labels))]
-    for true_label in labels:
-        counts = []
-        preds_for_label = pred_labels[np.argwhere(true_labels == true_label)]
-        for predicted_label in labels:
-            counts.append((preds_for_label == predicted_label).sum())
-        columns.append(counts)
-
-    headers = list(map(lambda label: f'True {label}', labels))
-    rows = np.column_stack(columns)
-    return tabulate(rows, headers, 'grid')
-
 def visualize_predictions(image_logger, logits, gt):
     num_samples = min(len(gt), 8)
     gt = gt[:num_samples]
@@ -122,13 +106,6 @@ def visualize_predictions(image_logger, logits, gt):
     plt.subplots_adjust(hspace=0.1, wspace=0.1)
     image_logger(plt.gcf())
 
-def visualize_learning_curve(image_logger, train_losses, val_losses):
-    plt.plot(train_losses, label='Train Loss')
-    plt.plot(val_losses, label='Val Loss')
-    plt.plot(np.array(train_losses) - np.array(val_losses), label='Generalization Error')
-    plt.legend()
-    image_logger(plt.gcf())
-
 def get_mask_db(path):
     return pd.read_csv(path)
 
@@ -142,12 +119,6 @@ def from_numpy(obj):
         return torch.cuda.FloatTensor(obj)
     else:
         return torch.FloatTensor(obj)
-
-def as_tuple(obj):
-    if isinstance(obj, tuple):
-        return obj
-    else:
-        return tuple([obj])
 
 def to_numpy(tensor):
     return tensor.data.cpu().numpy()

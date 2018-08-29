@@ -1,4 +1,6 @@
-class CyclicLR:
+from salt.callbacks.callback import Callback
+
+class CyclicLR(Callback):
     def __init__(self, cycle_iterations, min_lr, max_lr, optimizer, logger):
         self.cycle_iterations = cycle_iterations
         self.min_lr = min_lr
@@ -7,7 +9,7 @@ class CyclicLR:
         self.optimizer = optimizer
         self.logger = logger
 
-    def step(self):
+    def on_train_batch_end(self):
         self.counter += 1
         new_lr = self.max_lr - (self.max_lr - self.min_lr) * (self.counter % self.cycle_iterations) / self.cycle_iterations
         for param_group in self.optimizer.param_groups:

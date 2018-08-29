@@ -8,41 +8,22 @@ import matplotlib; matplotlib.use('agg')
 import matplotlib.pyplot as plt
 from fire import Fire
 
-from salt.cyclic_lr import CyclicLR
+from salt.callbacks.cyclic_lr import CyclicLR
+from salt.callbacks.model_checkpoint import ModelCheckpoint
+from salt.callbacks.model_checkpoint import load_checkpoint
+from salt.callbacks.learning_curve import LearningCurve
+from salt.callbacks.confusion_matrix import ConfusionMatrix
+from salt.callbacks.prediction_grid import PredictionGrid
 from salt.generators import get_train_generator
 from salt.generators import get_validation_generator
 from salt.linknet import Linknet
-from salt.model_checkpoint import ModelCheckpoint
-from salt.model_checkpoint import load_checkpoint
 from salt.loggers import make_loggers
 from salt.training import fit_model
 from salt.utils import as_cuda
-from salt.utils import confusion_matrix
-from salt.utils import visualize_learning_curve
 from salt.utils import visualize_predictions
 
-def jaccard_loss(logits, labels):
-    smooth = 1e-12
-    probs = torch.nn.functional.softmax(logits, dim=1)
-    probs = probs[:, 1, :, :]
-    labels = labels.float()
-    intersection = (probs * labels).sum((1, 2))
-    union = probs.sum((1, 2)) + labels.sum((1, 2)) - intersection
-    return (1 - (intersection + smooth) / (union + smooth)).mean()
-
 def compute_loss(outputs, labels):
-    image_logits = outputs[1]
-    image_labels = labels.sum(dim=(1,2)) > 0
-    image_loss = torch.nn.functional.cross_entropy(image_logits, image_labels.long())
-
-    if image_labels.sum() > 0:
-        mask_logits = outputs[0][image_labels == 1]
-        mask_labels = labels[image_labels == 1]
-        mask_loss = torch.nn.functional.cross_entropy(mask_logits, mask_labels.long())
-    else:
-        mask_loss = 0
-
-    return image_loss + mask_loss
+    return torch.nn.functional.cross_entropy(outputs, labels.long())
 
 def on_validation_end(history, visualize, image_logger, logger, model_checkpoint, train_loss, val_loss, outputs, gt):
     image_logits = outputs[1]
@@ -72,10 +53,18 @@ def fit(num_epochs=100, limit=None, batch_size=16, lr=.001, checkpoint_path=None
 
     model = as_cuda(model)
     optimizer = torch.optim.Adam(filter(lambda param: param.requires_grad, model.parameters()), lr, weight_decay=1e-4)
-    model_checkpoint = ModelCheckpoint(model, 'linknet', logger)
     train_generator = get_train_generator(batch_size, limit)
-    cyclic_lr = CyclicLR(cycle_iterations=len(train_generator) * 2, min_lr=0.0001, max_lr=0.005, optimizer=optimizer, logger=logger)
-    history = {}
+    callbacks = [
+        ModelCheckpoint(model, 'linknet', logger),
+        CyclicLR(cycle_iterations=len(train_generator) * 2, min_lr=0.0001, max_lr=0.005, optimizer=optimizer, logger=logger),
+        ConfusionMatrix([0, 1], logger)
+    ]
+
+    if visualize:
+        callbacks.extend([
+            LearningCurve(['train_loss', 'val_loss'], image_logger),
+            PredictionGrid(8, image_logger)
+        ])
 
     fit_model(
         model=model,
@@ -84,9 +73,8 @@ def fit(num_epochs=100, limit=None, batch_size=16, lr=.001, checkpoint_path=None
         optimizer=optimizer,
         loss_fn=compute_loss,
         num_epochs=num_epochs,
-        on_validation_end=partial(on_validation_end, history, visualize, image_logger, logger, model_checkpoint),
-        #on_batch_end=cyclic_lr.step,
-        logger=logger
+        logger=logger,
+        callbacks=callbacks
     )
 
 def prof():
