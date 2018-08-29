@@ -83,12 +83,12 @@ def pipeline(mask_db, cache, mask_cache, path):
     preprocess = lambda image: resize((128, 128), image[:, :, [1]])[:, :, None]
     image = read_image_cached(cache, preprocess, path)
     image = normalize(image)
-    image = channels_first(image)
     preprocess = lambda mask: resize((128, 128), mask)
     mask = load_mask_cached(mask_cache, preprocess, mask_db, (101, 101), path)
     if np.random.rand() < .5:
         image = fliplr(image)
         mask = fliplr(mask)
+    image = channels_first(image)
     return image, mask
 
 def confusion_matrix(pred_labels, true_labels, labels):
