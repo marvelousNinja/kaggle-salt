@@ -18,9 +18,9 @@ from salt.generators import get_train_generator
 from salt.generators import get_validation_generator
 from salt.linknet import Linknet
 from salt.loggers import make_loggers
+from salt.metrics import mean_iou
 from salt.training import fit_model
 from salt.utils import as_cuda
-from salt.utils import visualize_predictions
 
 def compute_loss(outputs, labels):
     return torch.nn.functional.cross_entropy(outputs, labels.long())
@@ -46,7 +46,7 @@ def fit(num_epochs=100, limit=None, batch_size=16, lr=.001, checkpoint_path=None
 
     if visualize:
         callbacks.extend([
-            LearningCurve(['train_loss', 'val_loss'], image_logger),
+            LearningCurve(['train_loss', 'val_loss', 'train_mean_iou', 'val_mean_iou'], image_logger),
             PredictionGrid(8, image_logger)
         ])
 
@@ -58,7 +58,8 @@ def fit(num_epochs=100, limit=None, batch_size=16, lr=.001, checkpoint_path=None
         loss_fn=compute_loss,
         num_epochs=num_epochs,
         logger=logger,
-        callbacks=callbacks
+        callbacks=callbacks,
+        metrics={'mean_iou': mean_iou}
     )
 
 def prof():
