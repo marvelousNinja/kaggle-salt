@@ -12,7 +12,7 @@ def get_train_validation_holdout_split(records):
     n = len(records)
     train = records[:int(n * .6)]
     validation = records[int(n * .6):int(n * .75)]
-    holdout = records[int(n * .75)]
+    holdout = records[int(n * .75):]
     return train, validation, holdout
 
 def get_images_in(path):
