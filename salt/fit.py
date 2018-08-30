@@ -25,7 +25,7 @@ from salt.utils import as_cuda
 def compute_loss(outputs, labels):
     return torch.nn.functional.cross_entropy(outputs, labels.long())
 
-def fit(num_epochs=100, limit=None, batch_size=16, lr=.005, checkpoint_path=None, telegram=False, visualize=False):
+def fit(num_epochs=100, limit=None, validation_limit=None, batch_size=16, lr=.005, checkpoint_path=None, telegram=False, visualize=False):
     torch.backends.cudnn.benchmark = True
     np.random.seed(1991)
     logger, image_logger = make_loggers(telegram)
@@ -53,7 +53,7 @@ def fit(num_epochs=100, limit=None, batch_size=16, lr=.005, checkpoint_path=None
     fit_model(
         model=model,
         train_generator=train_generator,
-        validation_generator=get_validation_generator(batch_size, 160),
+        validation_generator=get_validation_generator(batch_size, validation_limit),
         optimizer=optimizer,
         loss_fn=compute_loss,
         num_epochs=num_epochs,
