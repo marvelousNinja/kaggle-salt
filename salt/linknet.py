@@ -23,6 +23,7 @@ class Linknet(torch.nn.Module):
     def __init__(self, num_classes):
         super().__init__()
         self.triplet = torch.nn.Sequential(
+            torch.nn.ReflectionPad2d(padding=(13, 14, 13, 14)),
             torch.nn.Conv2d(1, 3, (3, 3), padding=1),
             torch.nn.BatchNorm2d(3),
             torch.nn.ReLU(inplace=True)
@@ -56,4 +57,4 @@ class Linknet(torch.nn.Module):
         x = self.decoder2(x) + x2
         x = self.decoder3(x) + x1
         x = self.decoder4(x)
-        return self.classifier(x)
+        return self.classifier(x)[:, :, 13:-14, 13:-14]

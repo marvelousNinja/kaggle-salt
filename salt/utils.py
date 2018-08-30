@@ -79,10 +79,10 @@ def resize(size, image):
     return cv2.resize(image, size, interpolation=cv2.INTER_NEAREST)
 
 def pipeline(mask_db, cache, mask_cache, path):
-    preprocess = lambda image: resize((128, 128), image[:, :, [1]])[:, :, None]
+    preprocess = lambda image: image[:, :, [0]]
     image = read_image_cached(cache, preprocess, path)
     image = normalize(image)
-    preprocess = lambda mask: resize((128, 128), mask)
+    preprocess = lambda mask: mask
     mask = load_mask_cached(mask_cache, preprocess, mask_db, (101, 101), path)
     if np.random.rand() < .5:
         image = fliplr(image)
