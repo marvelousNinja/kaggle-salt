@@ -34,7 +34,7 @@ def read_image_cached(cache, preprocess, path):
         return image
 
 def normalize(image):
-    return (image.astype(np.float32) / 255 - [0.471]) / [0.108]
+    return (image.astype(np.float32) / 255 - [0.485, 0.456, 0.406]) / [0.229, 0.224, 0.225]
 
 def channels_first(image):
     return np.moveaxis(image, 2, 0)
@@ -81,6 +81,7 @@ def resize(size, image):
 def pipeline(mask_db, cache, mask_cache, path):
     preprocess = lambda image: image[:, :, [0]]
     image = read_image_cached(cache, preprocess, path)
+    image = image[:, :, [0, 0, 0]]
     image = normalize(image)
     preprocess = lambda mask: mask
     mask = load_mask_cached(mask_cache, preprocess, mask_db, (101, 101), path)

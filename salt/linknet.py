@@ -22,12 +22,7 @@ class Decoder(torch.nn.Module):
 class Linknet(torch.nn.Module):
     def __init__(self, num_classes):
         super().__init__()
-        self.triplet = torch.nn.Sequential(
-            torch.nn.ReflectionPad2d(padding=(13, 14, 13, 14)),
-            torch.nn.Conv2d(1, 3, (3, 3), padding=1),
-            torch.nn.BatchNorm2d(3),
-            torch.nn.ReLU(inplace=True)
-        )
+        self.reflect_padding = torch.nn.ReflectionPad2d(padding=(13, 14, 13, 14))
         self.resnet = torchvision.models.resnet18(pretrained=True)
         self.decoder1 = Decoder(512, 256, stride=2, output_padding=1)
         self.decoder2 = Decoder(256, 128, stride=2, output_padding=1)
@@ -44,7 +39,7 @@ class Linknet(torch.nn.Module):
         )
 
     def forward(self, x):
-        x = self.triplet(x)
+        x = self.reflect_padding(x)
         x = self.resnet.conv1(x)
         x = self.resnet.bn1(x)
         x = self.resnet.relu(x)
