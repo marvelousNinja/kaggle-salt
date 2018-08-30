@@ -25,7 +25,7 @@ from salt.utils import as_cuda
 def compute_loss(outputs, labels):
     return torch.nn.functional.cross_entropy(outputs, labels.long())
 
-def fit(num_epochs=100, limit=None, batch_size=16, lr=.001, checkpoint_path=None, telegram=False, visualize=False):
+def fit(num_epochs=100, limit=None, batch_size=16, lr=.005, checkpoint_path=None, telegram=False, visualize=False):
     torch.backends.cudnn.benchmark = True
     np.random.seed(1991)
     logger, image_logger = make_loggers(telegram)
@@ -36,11 +36,11 @@ def fit(num_epochs=100, limit=None, batch_size=16, lr=.001, checkpoint_path=None
         model = Linknet(2)
 
     model = as_cuda(model)
-    optimizer = torch.optim.Adam(filter(lambda param: param.requires_grad, model.parameters()), lr, weight_decay=1e-4)
+    optimizer = torch.optim.SGD(filter(lambda param: param.requires_grad, model.parameters()), lr, weight_decay=1e-4, momentum=0.9)
     train_generator = get_train_generator(batch_size, limit)
     callbacks = [
         ModelCheckpoint(model, 'linknet', logger),
-        CyclicLR(cycle_iterations=len(train_generator) * 2, min_lr=0.0001, max_lr=0.005, optimizer=optimizer, logger=logger),
+        # CyclicLR(cycle_iterations=len(train_generator) * 2, min_lr=0.0001, max_lr=0.005, optimizer=optimizer, logger=logger),
         ConfusionMatrix([0, 1], logger)
     ]
 
@@ -59,7 +59,7 @@ def fit(num_epochs=100, limit=None, batch_size=16, lr=.001, checkpoint_path=None
         num_epochs=num_epochs,
         logger=logger,
         callbacks=callbacks,
-        metrics={'mean_iou': mean_iou}
+        metrics=[mean_iou]
     )
 
 def prof():

@@ -14,13 +14,13 @@ def fit_model(
         num_epochs,
         logger,
         callbacks=[],
-        metrics={}
+        metrics=[]
     ):
 
     for epoch in tqdm(range(num_epochs)):
         logs = {}
         logs['train_loss'] = 0
-        for name in metrics.keys(): logs[f'train_{name}'] = 0
+        for func in metrics: logs[f'train_{func.__name__}'] = 0
         num_batches = len(train_generator)
         model.train()
         torch.set_grad_enabled(True)
@@ -32,14 +32,14 @@ def fit_model(
             loss.backward()
             optimizer.step()
             logs['train_loss'] += loss.data[0]
-            for name, func in metrics.items(): logs[f'train_{name}'] += func(outputs.detach(), gt)
+            for func in metrics: logs[f'train_{func.__name__}'] += func(outputs.detach(), gt)
             for callback in callbacks: callback.on_train_batch_end()
 
         logs['train_loss'] /= num_batches
-        for name in metrics.keys(): logs[f'train_{name}'] /= num_batches
+        for func in metrics: logs[f'train_{func.__name__}'] /= num_batches
 
         logs['val_loss'] = 0
-        for name in metrics.keys(): logs[f'val_{name}'] = 0
+        for func in metrics: logs[f'val_{func.__name__}'] = 0
         all_outputs = []
         all_gt = []
         num_batches = len(validation_generator)
@@ -50,14 +50,14 @@ def fit_model(
             inputs, gt = from_numpy(inputs), from_numpy(gt)
             outputs = model(inputs)
             logs['val_loss'] += loss_fn(outputs, gt).data[0]
-            for name, func in metrics.items(): logs[f'val_{name}'] += func(outputs.detach(), gt)
+            for func in metrics: logs[f'val_{func.__name__}'] += func(outputs.detach(), gt)
 
             if isinstance(outputs, tuple):
                 all_outputs.append(list(map(to_numpy, outputs)))
             else:
                 all_outputs.append(to_numpy(outputs))
         logs['val_loss'] /= num_batches
-        for name, func in metrics.items(): logs[f'val_{name}'] /= num_batches
+        for func in metrics: logs[f'val_{func.__name__}'] /= num_batches
 
         if isinstance(all_outputs[0], tuple):
             all_outputs = list(map(np.concatenate, zip(*all_outputs)))
