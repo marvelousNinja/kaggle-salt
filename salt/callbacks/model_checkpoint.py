@@ -15,25 +15,31 @@ def load_checkpoint(path):
     else:
         return torch.load(path, map_location='cpu')
 
-def generate_checkpoint_path(prefix, timestamp, epoch, loss):
-    name = f'{prefix}-{timestamp}-{epoch:02d}-{loss:.5f}.pt'
+def generate_checkpoint_path(prefix, timestamp, epoch, value):
+    name = f'{prefix}-{timestamp}-{epoch:02d}-{value:.5f}.pt'
     return f'./data/models/{name}'
 
 class ModelCheckpoint(Callback):
-    def __init__(self, model, prefix, logger=None):
+    def __init__(self, model, prefix, log_to_track, mode, logger=None):
         self.epoch = 0
-        self.loss = float("inf")
         self.model = model
         self.logger = logger
-
+        self.mode = mode
+        self.value = float('inf') if mode == 'min' else 0.0
+        self.log_to_track = log_to_track
         timestamp = datetime.utcnow().strftime('%Y%m%d_%H%M')
         self.generate_checkpoint_path = partial(generate_checkpoint_path, prefix, timestamp)
 
     def on_validation_end(self, logs, outputs, gt):
-        loss = logs['val_loss']
-        if loss < self.loss:
-            checkpoint_path = self.generate_checkpoint_path(self.epoch, loss)
+        value = logs[self.log_to_track]
+        if self.mode == 'min':
+            update_needed = self.value > value
+        else:
+            update_needed = self.value < value
+
+        if update_needed:
+            checkpoint_path = self.generate_checkpoint_path(self.epoch, value)
             save_checkpoint(self.model, checkpoint_path)
-            self.loss = loss
+            self.value = value
             if self.logger: self.logger(f'Checkpoint saved {checkpoint_path}')
         self.epoch += 1

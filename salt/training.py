@@ -1,5 +1,6 @@
 import numpy as np
 import torch
+from tabulate import tabulate
 from tqdm import tqdm
 
 from salt.utils import from_numpy
@@ -66,4 +67,9 @@ def fit_model(
 
         all_gt = np.concatenate(all_gt)
         for callback in callbacks: callback.on_validation_end(logs, all_outputs, all_gt)
-        logger(f"epoch {epoch} train loss {logs['train_loss']:.5f} - val loss {logs['val_loss']:.5f}")
+
+        epoch_rows = [['epoch', epoch]]
+        for name, value in logs.items():
+            epoch_rows.append([name, f'{value:.3f}'])
+
+        logger(tabulate(epoch_rows))

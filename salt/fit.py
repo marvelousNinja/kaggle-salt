@@ -19,6 +19,7 @@ from salt.generators import get_validation_generator
 from salt.linknet import Linknet
 from salt.loggers import make_loggers
 from salt.metrics import mean_iou
+from salt.metrics import mean_ap
 from salt.training import fit_model
 from salt.utils import as_cuda
 
@@ -39,14 +40,14 @@ def fit(num_epochs=100, limit=None, validation_limit=None, batch_size=16, lr=.00
     optimizer = torch.optim.SGD(filter(lambda param: param.requires_grad, model.parameters()), lr, weight_decay=1e-4, momentum=0.9)
     train_generator = get_train_generator(batch_size, limit)
     callbacks = [
-        ModelCheckpoint(model, 'linknet', logger),
+        ModelCheckpoint(model, 'linknet', 'val_mean_ap', 'max', logger),
         # CyclicLR(cycle_iterations=len(train_generator) * 2, min_lr=0.0001, max_lr=0.005, optimizer=optimizer, logger=logger),
         ConfusionMatrix([0, 1], logger)
     ]
 
     if visualize:
         callbacks.extend([
-            LearningCurve(['train_loss', 'val_loss', 'train_mean_iou', 'val_mean_iou'], image_logger),
+            LearningCurve(['train_loss', 'val_loss', 'train_mean_iou', 'val_mean_iou', 'train_mean_ap', 'val_mean_ap'], image_logger),
             PredictionGrid(8, image_logger)
         ])
 
@@ -59,7 +60,7 @@ def fit(num_epochs=100, limit=None, validation_limit=None, batch_size=16, lr=.00
         num_epochs=num_epochs,
         logger=logger,
         callbacks=callbacks,
-        metrics=[mean_iou]
+        metrics=[mean_iou, mean_ap]
     )
 
 def prof():
