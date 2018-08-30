@@ -10,9 +10,9 @@ import matplotlib.pyplot as plt
 def get_train_validation_holdout_split(records):
     np.random.shuffle(records)
     n = len(records)
-    train = records[:int(n * .6)]
-    validation = records[int(n * .6):int(n * .75)]
-    holdout = records[int(n * .75):]
+    train = records[:int(n * .9)]
+    validation = records[int(n * .9):int(n * 1.0)]
+    holdout = records[int(n * 1.0):]
     return train, validation, holdout
 
 def get_images_in(path):
