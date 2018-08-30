@@ -40,7 +40,7 @@ def channels_first(image):
     return np.moveaxis(image, 2, 0)
 
 def encode_rle(mask):
-    pixels = mask.flatten()
+    pixels = mask.T.flatten()
     pixels = np.concatenate([[0], pixels, [0]])
     runs = np.where(pixels[1:] != pixels[:-1])[0] + 1
     runs[1::2] -= runs[::2]
