@@ -8,6 +8,7 @@ import torch
 import matplotlib.pyplot as plt
 
 def get_train_validation_holdout_split(records):
+    np.random.seed(1991)
     np.random.shuffle(records)
     n = len(records)
     train = records[:int(n * .9)]
