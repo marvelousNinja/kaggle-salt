@@ -12,6 +12,7 @@ from salt.callbacks.cyclic_lr import CyclicLR
 from salt.callbacks.confusion_matrix import ConfusionMatrix
 from salt.callbacks.learning_curve import LearningCurve
 from salt.callbacks.loss_surface import LossSurface
+from salt.callbacks.histogram import Histogram
 from salt.callbacks.model_checkpoint import ModelCheckpoint
 from salt.callbacks.model_checkpoint import load_checkpoint
 from salt.callbacks.prediction_grid import PredictionGrid
@@ -53,7 +54,8 @@ def fit(num_epochs=100, limit=None, validation_limit=None, batch_size=16, lr=.00
         callbacks.extend([
             LearningCurve(['train_loss', 'val_loss', 'train_mean_iou', 'val_mean_iou', 'train_mean_ap', 'val_mean_ap'], image_logger),
             PredictionGrid(8, image_logger),
-            LossSurface(image_logger, loss_surface_fn)
+            LossSurface(image_logger, loss_surface_fn),
+            Histogram(image_logger, mean_iou)
         ])
 
     fit_model(
