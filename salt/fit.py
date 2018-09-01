@@ -46,7 +46,7 @@ def fit(num_epochs=100, limit=None, validation_limit=None, batch_size=16, lr=.00
     train_generator = get_train_generator(batch_size, limit)
     callbacks = [
         ModelCheckpoint(model, 'linknet', 'val_mean_ap', 'max', logger),
-        # CyclicLR(cycle_iterations=len(train_generator) * 2, min_lr=0.0001, max_lr=0.005, optimizer=optimizer, logger=logger),
+        # CyclicLR(step_size=len(train_generator) * 2, min_lr=0.0001, max_lr=0.005, optimizer=optimizer, logger=logger),
         ConfusionMatrix([0, 1], logger)
     ]
 
