@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+
 from salt.callbacks.callback import Callback
 
 class LearningCurve(Callback):
