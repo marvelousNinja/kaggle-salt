@@ -22,7 +22,6 @@ class Decoder(torch.nn.Module):
 class Linknet(torch.nn.Module):
     def __init__(self, num_classes):
         super().__init__()
-        self.reflect_padding = torch.nn.ReflectionPad2d(padding=(13, 14, 13, 14))
         self.resnet = torchvision.models.resnet18(pretrained=True)
         self.decoder1 = Decoder(512, 256, stride=2, output_padding=1)
         self.decoder2 = Decoder(256, 128, stride=2, output_padding=1)
@@ -39,7 +38,6 @@ class Linknet(torch.nn.Module):
         )
 
     def forward(self, x):
-        x = self.reflect_padding(x)
         x = self.resnet.conv1(x)
         x = self.resnet.bn1(x)
         x = self.resnet.relu(x)
@@ -52,4 +50,4 @@ class Linknet(torch.nn.Module):
         x = self.decoder2(x) + x2
         x = self.decoder3(x) + x1
         x = self.decoder4(x)
-        return self.classifier(x)[:, :, 13:-14, 13:-14]
+        return self.classifier(x)
