@@ -11,11 +11,12 @@ from salt.utils import train_pipeline
 from salt.utils import validation_pipeline
 
 class DataGenerator:
-    def __init__(self, records, batch_size, transform, shuffle=True):
+    def __init__(self, records, batch_size, transform, shuffle=True, drop_last=True):
         self.records = records
         self.batch_size = batch_size
         self.transform = transform
         self.shuffle = shuffle
+        self.drop_last = drop_last
 
     def __iter__(self):
         if self.shuffle: np.random.shuffle(self.records)
@@ -34,12 +35,16 @@ class DataGenerator:
                     yield list(map(np.stack, split_outputs))
                     batch = []
 
-        if len(batch) > 0:
+        if (not self.drop_last) and len(batch) > 0:
             split_outputs = list(zip(*batch))
             yield list(map(np.stack, split_outputs))
 
     def __len__(self):
-        return math.ceil(len(self.records) / self.batch_size)
+        num_batches = len(self.records) / self.batch_size
+        if self.drop_last:
+            return math.floor(num_batches)
+        else:
+            return math.ceil(num_batches)
 
 def get_validation_generator(batch_size, limit=None):
     mask_db = get_mask_db('data/train.csv')
