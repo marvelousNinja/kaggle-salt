@@ -53,7 +53,7 @@ def fit(num_epochs=100, limit=None, validation_limit=None, batch_size=16, lr=.00
     if visualize:
         callbacks.extend([
             LearningCurve(['train_loss', 'val_loss', 'train_mean_iou', 'val_mean_iou', 'train_mean_ap', 'val_mean_ap'], image_logger),
-            PredictionGrid(8, image_logger),
+            PredictionGrid(80, image_logger),
             LossSurface(image_logger, loss_surface_fn),
             Histogram(image_logger, mean_iou)
         ])

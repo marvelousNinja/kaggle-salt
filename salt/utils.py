@@ -23,7 +23,7 @@ def read_image(path):
     return cv2.cvtColor(cv2.imread(path), cv2.COLOR_BGR2RGB)
 
 def fliplr(image):
-    return np.fliplr(image)
+    return cv2.flip(image, 1)
 
 def read_image_cached(cache, preprocess, path):
     image = cache.get(path)
