@@ -87,6 +87,34 @@ def shift_and_scale(top, bottom, left, right, image):
     image = image[top:image.shape[0] - bottom, left:image.shape[1] - right]
     return resize(original_shape, image)
 
+def shear(height_shift, width_shift, interpolation, image):
+    height, width = image.shape[:2]
+
+    src_perspective = np.array([
+        [0, 0],          # top-left
+        [width, 0],      # top-right
+        [width, height], # bottom-right
+        [0, height]      # bottom-left
+    ], np.float32)
+
+    dst_perspective = np.array([
+        [width_shift, height_shift],                    # top-left
+        [width + width_shift, -height_shift],           # top-right
+        [width - width_shift, height - height_shift],   # bottom-right
+        [-width_shift, height + height_shift]           # bottom-left
+    ], np.float32)
+
+    return cv2.warpPerspective(
+        image,
+        cv2.getPerspectiveTransform(src_perspective, dst_perspective),
+        (width, height),
+        flags=interpolation,
+        borderMode=cv2.BORDER_REFLECT_101
+    )
+
+def reflect_pad(top, bottom, left, right, image):
+    return cv2.copyMakeBorder(image, top, bottom, left, right, borderType=cv2.BORDER_REFLECT_101)
+
 def train_pipeline(mask_db, cache, mask_cache, path):
     preprocess = lambda image: image[:, :, [0]]
     image = read_image_cached(cache, preprocess, path)
@@ -108,6 +136,20 @@ def train_pipeline(mask_db, cache, mask_cache, path):
         image = shift_and_scale(top, bottom, left, right, image)
         mask = shift_and_scale(top, bottom, left, right, mask)
 
+    if np.random.rand() < .5:
+        if np.random.rand() < .5:
+            height_shift = np.random.randint(-image.shape[0] * 0.2, image.shape[0] * 0.2)
+            width_shift = 0
+        else:
+            height_shift = 0
+            width_shift = np.random.randint(-image.shape[1] * 0.2, image.shape[1] * 0.2)
+
+        image = shear(height_shift, width_shift, cv2.INTER_LINEAR, image)
+        mask = shear(height_shift, width_shift, cv2.INTER_NEAREST, mask)
+
+    image = reflect_pad(13, 14, 13, 14, image)
+    mask = reflect_pad(13, 14, 13, 14, mask)
+
     image = channels_first(image)
     return image, mask
 
@@ -118,6 +160,8 @@ def validation_pipeline(mask_db, cache, mask_cache, path):
     image = normalize(image)
     preprocess = lambda mask: mask
     mask = load_mask_cached(mask_cache, preprocess, mask_db, (101, 101), path)
+    image = reflect_pad(13, 14, 13, 14, image)
+    mask = reflect_pad(13, 14, 13, 14, mask)
     image = channels_first(image)
     return image, mask
 
