@@ -112,8 +112,22 @@ def shear(height_shift, width_shift, interpolation, image):
         borderMode=cv2.BORDER_REFLECT_101
     )
 
+def rotate(angle, interpolation, image):
+    height, width = image.shape[:2]
+
+    return cv2.warpAffine(
+        image,
+        cv2.getRotationMatrix2D((width / 2, height / 2), angle, 1),
+        (width, height),
+        flags=interpolation,
+        borderMode=cv2.BORDER_REFLECT_101
+    )
+
 def reflect_pad(top, bottom, left, right, image):
     return cv2.copyMakeBorder(image, top, bottom, left, right, borderType=cv2.BORDER_REFLECT_101)
+
+def blur(image):
+    return cv2.GaussianBlur(image, (5,5), 0)
 
 def train_pipeline(mask_db, cache, mask_cache, path):
     preprocess = lambda image: image[:, :, [0]]
