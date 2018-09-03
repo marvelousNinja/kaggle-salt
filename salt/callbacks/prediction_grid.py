@@ -10,10 +10,14 @@ def visualize_predictions(image_logger, max_samples, logits, gt):
     logits -= np.expand_dims(np.max(logits, axis=1), axis=1)
     probs = (np.exp(logits) / np.expand_dims(np.sum(np.exp(logits), axis=1), axis=1))[:, 1, :, :]
 
+    samples_per_row = 8
+    num_rows = int(np.ceil(num_samples / samples_per_row)) * 2
+    plt.figure(figsize=(6, 1 * num_rows))
+
     for i in range(num_samples):
-        plt.subplot(2, num_samples, i + 1)
+        plt.subplot(num_rows, samples_per_row, (i // samples_per_row) * samples_per_row + i + 1)
         plt.imshow(probs[i])
-        plt.subplot(2, num_samples, num_samples + i + 1)
+        plt.subplot(num_rows, samples_per_row, (i // samples_per_row + 1) * samples_per_row + i + 1)
         plt.imshow(gt[i])
     plt.gcf().tight_layout()
     plt.subplots_adjust(hspace=0.1, wspace=0.1)
