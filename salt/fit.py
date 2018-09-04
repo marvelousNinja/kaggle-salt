@@ -29,6 +29,7 @@ def loss_surface_fn(outputs, labels):
     return torch.nn.functional.cross_entropy(outputs, labels.long(), reduction='none')
 
 def compute_loss(outputs, labels):
+    import pdb; pdb.set_trace()
     return torch.nn.functional.cross_entropy(outputs, labels.long())
 
 def fit(num_epochs=100, limit=None, validation_limit=None, batch_size=16, lr=.005, checkpoint_path=None, telegram=False, visualize=False):
