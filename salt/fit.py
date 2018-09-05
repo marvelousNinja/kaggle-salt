@@ -16,12 +16,13 @@ from salt.callbacks.histogram import Histogram
 from salt.callbacks.model_checkpoint import ModelCheckpoint
 from salt.callbacks.model_checkpoint import load_checkpoint
 from salt.callbacks.prediction_grid import PredictionGrid
+from salt.callbacks.weight_grid import WeightGrid
 from salt.generators import get_train_generator
 from salt.generators import get_validation_generator
-from salt.linknet import Linknet
 from salt.loggers import make_loggers
 from salt.metrics import mean_iou
 from salt.metrics import mean_ap
+from salt.models.linknet import Linknet
 from salt.training import fit_model
 from salt.utils import as_cuda
 
@@ -29,7 +30,6 @@ def loss_surface_fn(outputs, labels):
     return torch.nn.functional.cross_entropy(outputs, labels.long(), reduction='none')
 
 def compute_loss(outputs, labels):
-    import pdb; pdb.set_trace()
     return torch.nn.functional.cross_entropy(outputs, labels.long())
 
 def fit(num_epochs=100, limit=None, validation_limit=None, batch_size=16, lr=.005, checkpoint_path=None, telegram=False, visualize=False):
@@ -56,7 +56,8 @@ def fit(num_epochs=100, limit=None, validation_limit=None, batch_size=16, lr=.00
             LearningCurve(['train_loss', 'val_loss', 'train_mean_iou', 'val_mean_iou', 'train_mean_ap', 'val_mean_ap'], image_logger),
             PredictionGrid(80, image_logger),
             LossSurface(image_logger, loss_surface_fn),
-            Histogram(image_logger, mean_iou)
+            Histogram(image_logger, mean_iou),
+            WeightGrid(model, image_logger, 32)
         ])
 
     fit_model(
