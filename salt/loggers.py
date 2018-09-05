@@ -14,7 +14,7 @@ def send_telegram_figure(figure):
     telegram_send.send(conf='./telegram.conf', images=[buf])
     plt.close()
 
-def plot_figure(figure):
+def plot_figure(_):
     plt.show()
     plt.close()
 

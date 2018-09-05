@@ -1,5 +1,4 @@
 import glob
-from functools import partial as __
 
 import cv2
 import numpy as np
