@@ -4,14 +4,14 @@ from multiprocessing.pool import ThreadPool
 
 import numpy as np
 
+from salt.pipelines import train_pipeline
+from salt.pipelines import validation_pipeline
 from salt.utils import get_images_in
 from salt.utils import get_mask_db
 from salt.utils import get_train_validation_holdout_split
-from salt.utils import train_pipeline
-from salt.utils import validation_pipeline
 
 class DataGenerator:
-    def __init__(self, records, batch_size, transform, shuffle=True, drop_last=True):
+    def __init__(self, records, batch_size, transform, shuffle=True, drop_last=False):
         self.records = records
         self.batch_size = batch_size
         self.transform = transform
@@ -50,18 +50,18 @@ def get_validation_generator(batch_size, limit=None):
     mask_db = get_mask_db('data/train.csv')
     image_paths = get_images_in('data/train/images')
     _, image_paths, _ = get_train_validation_holdout_split(image_paths)
-    transform = partial(validation_pipeline, mask_db, {}, {})
-    return DataGenerator(image_paths[:limit], batch_size, transform, shuffle=False)
+    transform = partial(validation_pipeline, {}, mask_db)
+    return DataGenerator(image_paths[:limit], batch_size, transform, shuffle=False, drop_last=True)
 
 def get_train_generator(batch_size, limit=None):
     mask_db = get_mask_db('data/train.csv')
     image_paths = get_images_in('data/train/images')
     image_paths, _, _ = get_train_validation_holdout_split(image_paths)
-    transform = partial(train_pipeline, mask_db, {}, {})
-    return DataGenerator(image_paths[:limit], batch_size, transform)
+    transform = partial(train_pipeline, {}, mask_db)
+    return DataGenerator(image_paths[:limit], batch_size, transform, drop_last=True)
 
 def get_test_generator(batch_size, limit=None):
     mask_db = get_mask_db('data/train.csv')
     image_paths = get_images_in('data/test/images')
-    transform = partial(validation_pipeline, mask_db, {}, {})
+    transform = partial(validation_pipeline, {}, mask_db)
     return DataGenerator(image_paths[:limit], batch_size, transform, shuffle=False)

@@ -10,7 +10,6 @@ from salt.utils import as_cuda
 from salt.utils import encode_rle
 from salt.utils import from_numpy
 from salt.utils import get_images_in
-from salt.utils import resize
 from salt.utils import to_numpy
 
 def predict(checkpoint_path, batch_size=1, limit=None):
