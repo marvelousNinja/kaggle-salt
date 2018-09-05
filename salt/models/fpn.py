@@ -46,7 +46,7 @@ class FPN(torch.nn.Module):
 
         self.classifier = torch.nn.Sequential(
             torch.nn.Conv2d(512, num_classes, (3, 3), padding=1),
-            torch.nn.Upsample(scale_factor=4, mode='nearest')
+            torch.nn.Upsample(scale_factor=4, mode='bilinear')
         )
 
     def forward(self, x):
@@ -60,13 +60,13 @@ class FPN(torch.nn.Module):
         x4 = self.resnet.layer4(x3)
 
         f4 = self.decoder4(x4)
-        f3 = self.decoder3(x3) + torch.nn.functional.upsample_nearest(f4, scale_factor=2)
-        f2 = self.decoder2(x2) + torch.nn.functional.upsample_nearest(f3, scale_factor=2)
-        f1 = self.decoder1(x1) + torch.nn.functional.upsample_nearest(f2, scale_factor=2)
+        f3 = self.decoder3(x3) + torch.nn.functional.upsample_bilinear(f4, scale_factor=2)
+        f2 = self.decoder2(x2) + torch.nn.functional.upsample_bilinear(f3, scale_factor=2)
+        f1 = self.decoder1(x1) + torch.nn.functional.upsample_bilinear(f2, scale_factor=2)
 
         return self.classifier(torch.cat([
-            torch.nn.functional.upsample_nearest(self.pyramid_decoder4(f4), scale_factor=8),
-            torch.nn.functional.upsample_nearest(self.pyramid_decoder3(f3), scale_factor=4),
-            torch.nn.functional.upsample_nearest(self.pyramid_decoder2(f2), scale_factor=2),
+            torch.nn.functional.upsample_bilinear(self.pyramid_decoder4(f4), scale_factor=8),
+            torch.nn.functional.upsample_bilinear(self.pyramid_decoder3(f3), scale_factor=4),
+            torch.nn.functional.upsample_bilinear(self.pyramid_decoder2(f2), scale_factor=2),
             self.pyramid_decoder1(f1)
         ], dim=1))
