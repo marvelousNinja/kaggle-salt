@@ -1,4 +1,7 @@
 class Callback:
+    def on_train_begin(self):
+        pass
+
     def on_validation_end(self, logs, outputs, gt):
         pass
 
