@@ -29,7 +29,7 @@ class Decoder(torch.nn.Module):
         x = self.smoother(x) + x
         return x
 
-class Linknet(torch.nn.Module):
+class ResidualLinknet(torch.nn.Module):
     def __init__(self, num_classes):
         super().__init__()
         self.resnet = torchvision.models.resnet34(pretrained=True)
