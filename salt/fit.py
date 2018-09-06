@@ -8,6 +8,7 @@ from salt.callbacks.cyclic_lr import CyclicLR
 from salt.callbacks.confusion_matrix import ConfusionMatrix
 from salt.callbacks.learning_curve import LearningCurve
 from salt.callbacks.loss_surface import LossSurface
+from salt.callbacks.lr_range_test import LRRangeTest
 from salt.callbacks.lr_schedule import LRSchedule
 from salt.callbacks.histogram import Histogram
 from salt.callbacks.model_checkpoint import ModelCheckpoint
@@ -46,6 +47,7 @@ def fit(num_epochs=100, limit=None, validation_limit=None, batch_size=16, lr=.00
         ModelCheckpoint(model, 'linknet', 'val_mean_ap', 'max', logger),
         # CyclicLR(step_size=len(train_generator) * 2, min_lr=0.0001, max_lr=0.005, optimizer=optimizer, logger=logger),
         # LRSchedule(optimizer, [(0, 0.003), (2, 0.01), (12, 0.001), (17, 0.0001)], logger),
+        # LRRangeTest(0.00001, 1.0, 20000, optimizer, image_logger),
         ConfusionMatrix([0, 1], logger)
     ]
 

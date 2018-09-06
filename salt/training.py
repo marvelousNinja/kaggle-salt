@@ -35,7 +35,7 @@ def fit_model(
             optimizer.step()
             logs['train_loss'] += loss.data[0]
             for func in metrics: logs[f'train_{func.__name__}'] += func(outputs.detach(), gt)
-            for callback in callbacks: callback.on_train_batch_end()
+            for callback in callbacks: callback.on_train_batch_end(loss.data[0])
 
         logs['train_loss'] /= num_batches
         for func in metrics: logs[f'train_{func.__name__}'] /= num_batches
