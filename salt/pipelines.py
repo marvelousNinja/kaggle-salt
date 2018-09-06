@@ -195,6 +195,28 @@ class ChannelsFirst:
         args['image'] = channels_first(args['image'])
         return args
 
+class Blur:
+    def __call__(self, args):
+        args['image'] = blur(args['image'])
+        return args
+
+class Cutout:
+    def __init__(self, diff):
+        self.diff = diff
+
+    def __call__(self, args):
+        image = args['image'].copy()
+        cut_height = int(image.shape[0] * self.diff)
+        cut_width = int(image.shape[1] * self.diff)
+        top = np.random.randint(0, cut_height)
+        left = np.random.randint(0, cut_width)
+        image[top:top + cut_height, left:left + cut_width] = 0
+        args['image'] = image
+        if args.get('mask') is not None:
+            args['mask'] = args['mask'].copy()
+            args['mask'][top:top + cut_height, left:left + cut_width] = 0
+        return args
+
 def train_pipeline(cache, mask_db, path):
     image, mask = read_image_and_mask_cached(cache, mask_db, (101, 101), path)
     args = Pipe([
@@ -204,7 +226,9 @@ def train_pipeline(cache, mask_db, path):
             VerticalShear(0.2),
             HorizontalShear(0.2),
             ShiftScale(0.2),
-            Rotate(10)
+            Rotate(10),
+            Cutout(0.2),
+            Blur()
         ])),
         Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
         ReflectPad(13, 14, 13, 14),
