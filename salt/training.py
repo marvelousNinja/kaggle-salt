@@ -25,6 +25,7 @@ def fit_model(
         num_batches = len(train_generator)
         model.train()
         torch.set_grad_enabled(True)
+        for callback in callbacks: callback.on_train_begin()
         for inputs, gt in tqdm(train_generator, total=num_batches):
             inputs, gt = from_numpy(inputs), from_numpy(gt)
             optimizer.zero_grad()
