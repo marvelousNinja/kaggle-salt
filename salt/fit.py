@@ -41,7 +41,7 @@ def fit(num_epochs=100, limit=None, validation_limit=None, batch_size=16, lr=.00
         model = Linknet(2)
 
     model = as_cuda(model)
-    optimizer = torch.optim.SGD(filter(lambda param: param.requires_grad, model.parameters()), lr, weight_decay=1e-4, momentum=0.9)
+    optimizer = torch.optim.SGD(filter(lambda param: param.requires_grad, model.parameters()), lr, weight_decay=1e-4, momentum=0.9, nesterov=True)
     train_generator = get_train_generator(batch_size, limit)
     callbacks = [
         ModelCheckpoint(model, 'linknet', 'val_mean_ap', 'max', logger),
