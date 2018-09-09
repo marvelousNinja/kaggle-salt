@@ -28,7 +28,6 @@ class Decoder(torch.nn.Module):
     def __init__(self, in_channels, mid_channels, out_channels):
         super().__init__()
         self.layers = torch.nn.Sequential(
-            torch.nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True),
             torch.nn.Conv2d(in_channels, mid_channels, 3, padding=1),
             torch.nn.BatchNorm2d(mid_channels),
             torch.nn.ReLU(inplace=True),
@@ -52,7 +51,8 @@ class Frognet(torch.nn.Module):
             torch.nn.ReLU(inplace=True),
             torch.nn.Conv2d(512, 256, 3, padding=1),
             torch.nn.BatchNorm2d(256),
-            torch.nn.ReLU(inplace=True)
+            torch.nn.ReLU(inplace=True),
+            torch.nn.MaxPool2d(2)
         )
 
         self.encoders = torch.nn.ModuleList([
@@ -92,11 +92,11 @@ class Frognet(torch.nn.Module):
 
         f = self.center(x4)
 
-        d5 = self.decoders[0](torch.cat([f, x4], dim=1))
-        d4 = self.decoders[1](torch.cat([d5, x3], dim=1))
-        d3 = self.decoders[2](torch.cat([d4, x2], dim=1))
-        d2 = self.decoders[3](torch.cat([d3, x1], dim=1))
-        d1 = self.decoders[4](d2)
+        d5 = self.decoders[0](torch.cat([torch.nn.functional.upsample_bilinear(f, scale_factor=2), x4], dim=1))
+        d4 = self.decoders[1](torch.cat([torch.nn.functional.upsample_bilinear(d5, scale_factor=2), x3], dim=1))
+        d3 = self.decoders[2](torch.cat([torch.nn.functional.upsample_bilinear(d4, scale_factor=2), x2], dim=1))
+        d2 = self.decoders[3](torch.cat([torch.nn.functional.upsample_bilinear(d3, scale_factor=2), x1], dim=1))
+        d1 = self.decoders[4](torch.nn.functional.upsample_bilinear(d2, scale_factor=2))
 
         f = torch.cat([
             d1,
@@ -108,4 +108,3 @@ class Frognet(torch.nn.Module):
 
         f = self.dropout(f)
         return self.classifier(f)
-
