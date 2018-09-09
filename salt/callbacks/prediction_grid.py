@@ -6,10 +6,8 @@ from salt.callbacks.callback import Callback
 def visualize_predictions(image_logger, max_samples, logits, gt):
     num_samples = min(len(gt), max_samples)
     gt = gt[:num_samples]
-    logits = logits[:num_samples]
-    logits -= np.expand_dims(np.max(logits, axis=1), axis=1)
-    probs = (np.exp(logits) / np.expand_dims(np.sum(np.exp(logits), axis=1), axis=1))[:, 1, :, :]
-
+    logits = logits[:num_samples].squeeze()
+    probs = 1 / (1 + np.exp(-logits))
     samples_per_row = 16
     num_rows = int(np.ceil(num_samples / samples_per_row)) * 2
     plt.figure(figsize=(6, 1 * num_rows))

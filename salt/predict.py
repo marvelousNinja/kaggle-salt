@@ -23,10 +23,11 @@ def predict(checkpoint_path, batch_size=1, limit=None):
     for inputs, _ in tqdm(test_generator, total=len(test_generator)):
         inputs = from_numpy(inputs)
         outputs = model(inputs)
-        masks = to_numpy(torch.argmax(outputs, dim=1))
+        # TODO AS: Ignoring reflected regions, since they are cut on submission
+        masks = to_numpy(torch.sigmoid(outputs).squeeze().round().long())[13:-14, 13:-14]
         for mask in masks:
             _id = ids.pop(0)
-            if mask.max() == 0:
+            if mask.sum() <= 3:
                 records.append((_id, None))
             else:
                 records.append((_id, encode_rle(mask)))

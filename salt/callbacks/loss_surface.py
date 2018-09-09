@@ -15,7 +15,7 @@ class LossSurface(Callback):
     def on_validation_end(self, logs, outputs, gt):
         losses = to_numpy(self.loss_fn(from_numpy(outputs), from_numpy(gt)))
         losses = losses.mean(axis=0)
-        losses =  uniform_filter(losses, size=6, mode='nearest')
+        losses = uniform_filter(losses, size=6, mode='nearest')
         x, y = np.meshgrid(np.arange(losses.shape[0]), np.arange(losses.shape[1]))
         fig = plt.figure()
         ax = fig.gca(projection='3d')

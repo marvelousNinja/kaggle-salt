@@ -24,4 +24,4 @@ class ConfusionMatrix(Callback):
         self.labels = labels
 
     def on_validation_end(self, logs, outputs, gt):
-        self.logger(confusion_matrix(np.argmax(outputs, axis=1), gt, self.labels))
+        self.logger(confusion_matrix(np.sign(outputs).abs(), gt, self.labels))

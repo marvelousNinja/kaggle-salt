@@ -1,7 +1,6 @@
 import torch
 import numpy as np
 import matplotlib; matplotlib.use('agg')
-import matplotlib.pyplot as plt
 from fire import Fire
 
 from salt.callbacks.cyclic_lr import CyclicLR
@@ -26,10 +25,10 @@ from salt.training import fit_model
 from salt.utils import as_cuda
 
 def loss_surface_fn(outputs, labels):
-    return torch.nn.functional.cross_entropy(outputs, labels.long(), reduction='none')
+    return torch.nn.functional.binary_cross_entropy_with_logits(outputs.squeeze(), labels, reduction='none')
 
 def compute_loss(outputs, labels):
-    return torch.nn.functional.cross_entropy(outputs, labels.long())
+    return torch.nn.functional.binary_cross_entropy_with_logits(outputs.squeeze(), labels)
 
 def fit(num_epochs=100, limit=None, validation_limit=None, batch_size=16, lr=.005, checkpoint_path=None, telegram=False, visualize=False):
     torch.backends.cudnn.benchmark = True
@@ -39,7 +38,7 @@ def fit(num_epochs=100, limit=None, validation_limit=None, batch_size=16, lr=.00
     if checkpoint_path:
         model = load_checkpoint(checkpoint_path)
     else:
-        model = Linknet(2)
+        model = Linknet(1)
 
     model = as_cuda(model)
     optimizer = torch.optim.SGD(filter(lambda param: param.requires_grad, model.parameters()), lr, weight_decay=1e-4, momentum=0.9, nesterov=True)

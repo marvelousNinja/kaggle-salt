@@ -2,8 +2,9 @@ import torch
 
 def mean_iou(outputs, gt, average=True):
     smooth = 1e-12
-    pred_masks = torch.argmax(outputs, dim=1)
-    true_masks = gt.long()
+    # TODO AS: Ignoring reflected regions, since they are cut on submission
+    pred_masks = torch.sigmoid(outputs.squeeze()).round().long()[:, 13:-14, 13:-14]
+    true_masks = gt.long()[:, 13:-14, 13:-14]
     intersection = (pred_masks & true_masks).sum(dim=(1, 2)).float()
     union = (pred_masks | true_masks).sum(dim=(1, 2)).float()
     values = ((intersection + smooth) / (union + smooth))
