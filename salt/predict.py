@@ -24,7 +24,7 @@ def predict(checkpoint_path, batch_size=1, limit=None):
         inputs = from_numpy(inputs)
         outputs = model(inputs)
         # TODO AS: Ignoring reflected regions, since they are cut on submission
-        masks = to_numpy(torch.sigmoid(outputs).squeeze().round().long())[13:-14, 13:-14]
+        masks = to_numpy(torch.sigmoid(outputs)[:, 0, :, :].round().long())[13:-14, 13:-14]
         for mask in masks:
             _id = ids.pop(0)
             if mask.sum() <= 3:
