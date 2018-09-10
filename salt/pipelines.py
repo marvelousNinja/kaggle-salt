@@ -217,8 +217,13 @@ class Cutout:
             args['mask'][top:top + cut_height, left:left + cut_width] = 0
         return args
 
-def train_pipeline(cache, mask_db, path):
+def train_pipeline(cache, mask_db, all_paths, path):
     image, mask = read_image_and_mask_cached(cache, mask_db, (101, 101), path)
+    other_image, other_mask = read_image_and_mask_cached(cache, mask_db, (101, 101), np.random.choice(all_paths))
+    ratio = np.random.beta(2, 5)
+    image = other_image * ratio + image * (1 - ratio)
+    mask = other_mask * ratio + mask * (1 - ratio)
+
     args = Pipe([
         Maybe(0.5, Fliplr()),
         Maybe(0.5, OneOf([
