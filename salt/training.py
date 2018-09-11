@@ -6,6 +6,11 @@ from tqdm import tqdm
 from salt.utils import from_numpy
 from salt.utils import to_numpy
 
+def mixup_batch(inputs, gt):
+    ratio = np.random.beta(0.4, 0.4)
+    perm = np.random.permutation(len(gt))
+    return inputs * ratio + inputs[perm] * (1 - ratio), gt, gt[perm], ratio
+
 def fit_model(
         model,
         train_generator,
@@ -28,9 +33,10 @@ def fit_model(
         for callback in callbacks: callback.on_train_begin()
         for inputs, gt in tqdm(train_generator, total=num_batches):
             inputs, gt = from_numpy(inputs), from_numpy(gt)
+            inputs, gt_a, gt_b, ratio = mixup_batch(inputs, gt)
             optimizer.zero_grad()
             outputs = model(inputs)
-            loss = loss_fn(outputs, gt)
+            loss = loss_fn(outputs, gt_a, gt_b, ratio)
             loss.backward()
             optimizer.step()
             logs['train_loss'] += loss.data[0]

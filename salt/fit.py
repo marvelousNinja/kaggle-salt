@@ -28,9 +28,14 @@ from salt.losses import lovasz_hinge_loss
 def loss_surface_fn(outputs, labels):
     return torch.nn.functional.binary_cross_entropy_with_logits(outputs.squeeze(), labels, reduction='none')
 
-def compute_loss(outputs, labels):
-    # return lovasz_hinge_loss(outputs, labels)
-    return torch.nn.functional.binary_cross_entropy_with_logits(outputs.squeeze(), labels)
+def compute_loss(outputs, labels_a, labels_b=None, ratio=None):
+    if labels_b is not None:
+        loss_a = torch.nn.functional.binary_cross_entropy_with_logits(outputs.squeeze(), labels_a)
+        loss_b = torch.nn.functional.binary_cross_entropy_with_logits(outputs.squeeze(), labels_b)
+        return ratio * loss_a + (1 - ratio) * loss_b
+    else:
+        # return lovasz_hinge_loss(outputs, labels_a)
+        return torch.nn.functional.binary_cross_entropy_with_logits(outputs.squeeze(), labels_a)
 
 def fit(num_epochs=100, limit=None, validation_limit=None, batch_size=16, lr=.005, checkpoint_path=None, telegram=False, visualize=False):
     torch.backends.cudnn.benchmark = True

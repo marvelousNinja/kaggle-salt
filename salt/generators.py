@@ -57,7 +57,7 @@ def get_train_generator(batch_size, limit=None):
     mask_db = get_mask_db('data/train.csv')
     image_paths = get_images_in('data/train/images')
     image_paths, _, _ = get_train_validation_holdout_split(image_paths)
-    transform = partial(train_pipeline, {}, mask_db, image_paths)
+    transform = partial(train_pipeline, {}, mask_db)
     return DataGenerator(image_paths[:limit], batch_size, transform, drop_last=True)
 
 def get_test_generator(batch_size, limit=None):
