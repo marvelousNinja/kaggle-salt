@@ -36,7 +36,9 @@ def fit_model(
             inputs, gt_a, gt_b, ratio = mixup_batch(inputs, gt)
             optimizer.zero_grad()
             outputs = model(inputs)
-            loss = loss_fn(outputs, gt_a, gt_b, ratio)
+            loss_a = loss_fn(outputs, gt_a)
+            loss_b = loss_fn(outputs, gt_b)
+            loss = loss_a * ratio + loss_b * (1 - ratio)
             loss.backward()
             optimizer.step()
             logs['train_loss'] += loss.data[0]
