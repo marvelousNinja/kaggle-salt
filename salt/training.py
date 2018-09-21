@@ -5,11 +5,8 @@ from tqdm import tqdm
 
 from salt.utils import from_numpy
 from salt.utils import to_numpy
-
-def mixup_batch(inputs, gt):
-    ratio = np.random.beta(0.4, 0.4)
-    perm = np.random.permutation(len(gt))
-    return inputs * ratio + inputs[perm] * (1 - ratio), gt, gt[perm], ratio
+from salt.models.advesary_net import AdvesaryNet
+from salt.utils import as_cuda
 
 def fit_model(
         model,
@@ -23,22 +20,49 @@ def fit_model(
         metrics=[]
     ):
 
+    advesary_model = as_cuda(AdvesaryNet())
+    advesary_opt = torch.optim.SGD(advesary_model.parameters(), lr=0.001)
+
     for epoch in tqdm(range(num_epochs)):
+        num_batches = len(train_generator)
+        # 1. Training advesary net
+        torch.set_grad_enabled(True)
+        model.eval()
+        advesary_model.train()
+        advesary_loss = 0
+        for inputs, gt in tqdm(train_generator, total=num_batches):
+            # 1.1. Training on normal batch
+            inputs, gt = from_numpy(inputs), from_numpy(gt)
+            advesary_opt.zero_grad()
+            outputs = advesary_model(inputs * gt[:, None, :, :])
+            loss = torch.nn.functional.binary_cross_entropy_with_logits(outputs, as_cuda(torch.ones(gt.shape[0])[:, None]))
+            loss.backward()
+            advesary_opt.step()
+            advesary_loss += loss.data[0]
+            # 1.2. Training on fake batch
+            segmentator_preds = model(inputs).detach()
+            advesary_opt.zero_grad()
+            outputs = advesary_model(inputs * segmentator_preds)
+            loss = torch.nn.functional.binary_cross_entropy_with_logits(outputs, as_cuda(torch.zeros(gt.shape[0])[:, None]))
+            loss.backward()
+            advesary_opt.step()
+            advesary_loss += loss.data[0]
+        logger(f'Advesary loss: {advesary_loss / (num_batches * 2):.5f}')
+
         logs = {}
         logs['train_loss'] = 0
         for func in metrics: logs[f'train_{func.__name__}'] = 0
         num_batches = len(train_generator)
         model.train()
+        advesary_model.eval()
         torch.set_grad_enabled(True)
         for callback in callbacks: callback.on_train_begin()
         for inputs, gt in tqdm(train_generator, total=num_batches):
             inputs, gt = from_numpy(inputs), from_numpy(gt)
-            inputs, gt_a, gt_b, ratio = mixup_batch(inputs, gt)
             optimizer.zero_grad()
             outputs = model(inputs)
-            loss_a = loss_fn(outputs, gt_a)
-            loss_b = loss_fn(outputs, gt_b)
-            loss = loss_a * ratio + loss_b * (1 - ratio)
+            advesary_outputs = advesary_model(inputs * outputs)
+            loss = loss_fn(outputs, gt) + 2 * torch.nn.functional.binary_cross_entropy_with_logits(advesary_outputs, as_cuda(torch.ones(gt.shape[0])[:, None]))
             loss.backward()
             optimizer.step()
             logs['train_loss'] += loss.data[0]
