@@ -1,11 +1,11 @@
 import numpy as np
 import torch
+import torchvision
 from tabulate import tabulate
 from tqdm import tqdm
 
 from salt.utils import from_numpy
 from salt.utils import to_numpy
-from salt.models.advesary_net import AdvesaryNet
 from salt.utils import as_cuda
 
 def fit_model(
@@ -20,7 +20,10 @@ def fit_model(
         metrics=[]
     ):
 
-    advesary_model = as_cuda(AdvesaryNet())
+    advesary_model = torchvision.models.resnet18(pretrained=True)
+    advesary_model.avgpool = torch.nn.AvgPool2d(4)
+    advesary_model.fc = torch.nn.Linear(advesary_model.fc.in_features, 1)
+    advesary_model = as_cuda(advesary_model)
     advesary_opt = torch.optim.SGD(advesary_model.parameters(), lr=0.001)
 
     for epoch in tqdm(range(num_epochs)):
@@ -62,7 +65,7 @@ def fit_model(
             optimizer.zero_grad()
             outputs = model(inputs)
             advesary_outputs = advesary_model(inputs * outputs)
-            loss = loss_fn(outputs, gt) + 2 * torch.nn.functional.binary_cross_entropy_with_logits(advesary_outputs, as_cuda(torch.ones(gt.shape[0])[:, None]))
+            loss = loss_fn(outputs, gt) + 0.1 * torch.nn.functional.binary_cross_entropy_with_logits(advesary_outputs, as_cuda(torch.ones(gt.shape[0])[:, None]))
             loss.backward()
             optimizer.step()
             logs['train_loss'] += loss.data[0]
