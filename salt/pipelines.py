@@ -217,6 +217,13 @@ class Cutout:
             args['mask'][top:top + cut_height, left:left + cut_width] = 0
         return args
 
+class CloseMask:
+    def __call__(self, args):
+        kernel = np.ones((4, 4), np.uint8)
+        if args.get('mask') is not None:
+            args['mask'] = cv2.morphologyEx(args.get('mask'), cv2.MORPH_CLOSE, kernel)
+        return args
+
 def train_pipeline(cache, mask_db, path):
     image, mask = read_image_and_mask_cached(cache, mask_db, (101, 101), path)
     args = Pipe([

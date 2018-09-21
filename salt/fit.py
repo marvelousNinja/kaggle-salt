@@ -18,17 +18,19 @@ from salt.callbacks.weight_grid import WeightGrid
 from salt.generators import get_train_generator
 from salt.generators import get_validation_generator
 from salt.loggers import make_loggers
+from salt.losses import lovasz_hinge_loss
+from salt.losses import focal_loss
 from salt.metrics import mean_iou
 from salt.metrics import mean_ap
 from salt.models.linknet import Linknet
 from salt.training import fit_model
 from salt.utils import as_cuda
-from salt.losses import lovasz_hinge_loss
 
 def loss_surface_fn(outputs, labels):
     return torch.nn.functional.binary_cross_entropy_with_logits(outputs.squeeze(), labels, reduction='none')
 
 def compute_loss(outputs, labels):
+    # return focal_loss(outputs, labels)
     # return lovasz_hinge_loss(outputs, labels)
     return torch.nn.functional.binary_cross_entropy_with_logits(outputs.squeeze(), labels)
 

@@ -22,3 +22,12 @@ def lovasz_hinge_loss(logits, labels, average=True):
         losses.append(flat_lovasz_hinge_loss(sample_logits.view(-1), sample_labels.view(-1)))
     if average: return sum(losses) / len(losses)
     return losses
+
+def focal_loss(logits, labels, average=True):
+    bce = torch.nn.functional.binary_cross_entropy_with_logits(logits, labels[:, None], reduction='none')
+    probs = torch.sigmoid(logits)
+    signs = 2 * labels.float() - 1
+    diffs = labels.float() - signs * probs
+    losses = bce * (diffs ** 2)
+    if average: return losses.mean()
+    return losses
