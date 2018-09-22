@@ -14,7 +14,7 @@ def flat_lovasz_hinge_loss(logits, labels):
     errors_sorted, indicies = torch.sort(errors, dim=0, descending=True)
     labels_sorted = labels[indicies]
     grad = flat_lovasz_hinge_grad(labels_sorted)
-    return torch.dot(torch.nn.functional.relu(errors_sorted), grad)
+    return torch.dot(torch.nn.functional.elu(errors_sorted) + 1, grad)
 
 def lovasz_hinge_loss(logits, labels, average=True):
     losses = []
