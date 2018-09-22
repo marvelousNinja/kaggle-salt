@@ -76,7 +76,6 @@ class Frognet(torch.nn.Module):
             Decoder(64, 32, 64)
         ])
 
-        self.dropout = torch.nn.Dropout(0.5)
         self.classifier = torch.nn.Sequential(
             torch.nn.Conv2d(320, 64, 3, padding=1),
             torch.nn.ReLU(inplace=True),
@@ -106,5 +105,4 @@ class Frognet(torch.nn.Module):
             torch.nn.functional.upsample_bilinear(d5, scale_factor=16)
         ], dim=1)
 
-        f = self.dropout(f)
         return self.classifier(f)
