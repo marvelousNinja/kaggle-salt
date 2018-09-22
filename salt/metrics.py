@@ -15,4 +15,6 @@ def mean_ap(outputs, gt, average=True):
     precision = 0
     thresholds = [0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95]
     for threshold in thresholds: precision += ious > threshold
-    return (precision.float() / len(thresholds)).mean()
+    average_precision = precision.float() / len(thresholds)
+    if average: return average_precision.mean()
+    return average_precision
