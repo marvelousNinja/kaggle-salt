@@ -32,13 +32,17 @@ class Decoder(torch.nn.Module):
             torch.nn.BatchNorm2d(mid_channels),
             torch.nn.ReLU(inplace=True),
             torch.nn.Conv2d(mid_channels, out_channels, 3, padding=1),
-            torch.nn.BatchNorm2d(out_channels),
-            torch.nn.ReLU(inplace=True),
-            SCSEBlock(out_channels)
+            torch.nn.BatchNorm2d(out_channels)
         )
 
+        self.downsampler = torch.nn.Sequential(
+            torch.nn.Conv2d(in_channels, out_channels, kernel_size=1, bias=False),
+            torch.nn.BatchNorm2d(out_channels)
+        )
+        self.relu = torch.nn.ReLU(inplace=True)
+
     def forward(self, x):
-        return self.layers(x)
+        return self.relu(self.layers(x) + self.downsampler(x))
 
 class Frognet(torch.nn.Module):
     def __init__(self, num_classes):
@@ -46,18 +50,14 @@ class Frognet(torch.nn.Module):
         self.resnet = torchvision.models.resnet34(pretrained=True)
 
         self.center = torch.nn.Sequential(
-            torch.nn.Conv2d(512, 512, 3, padding=1),
-            torch.nn.BatchNorm2d(512),
-            torch.nn.ReLU(inplace=True),
-            torch.nn.Conv2d(512, 256, 3, padding=1),
-            torch.nn.BatchNorm2d(256),
-            torch.nn.ReLU(inplace=True),
+            Decoder(512, 256, 256),
             torch.nn.MaxPool2d(2)
         )
 
         self.encoders = torch.nn.ModuleList([
             torch.nn.Sequential(
-                self.resnet.conv1,
+                #self.resnet.conv1,
+                torch.nn.Conv2d(3, 64, kernel_size=3, padding=1),
                 self.resnet.bn1,
                 self.resnet.relu
                 # Maxpool removed intentionally
@@ -77,7 +77,7 @@ class Frognet(torch.nn.Module):
         ])
 
         self.classifier = torch.nn.Sequential(
-            torch.nn.Conv2d(320, 64, 3, padding=1),
+            torch.nn.Conv2d(256, 64, 3, padding=1),
             torch.nn.ReLU(inplace=True),
             torch.nn.Conv2d(64, num_classes, 1)
         )
@@ -95,14 +95,12 @@ class Frognet(torch.nn.Module):
         d4 = self.decoders[1](torch.cat([torch.nn.functional.upsample_bilinear(d5, scale_factor=2), x3], dim=1))
         d3 = self.decoders[2](torch.cat([torch.nn.functional.upsample_bilinear(d4, scale_factor=2), x2], dim=1))
         d2 = self.decoders[3](torch.cat([torch.nn.functional.upsample_bilinear(d3, scale_factor=2), x1], dim=1))
-        d1 = self.decoders[4](torch.nn.functional.upsample_bilinear(d2, scale_factor=2))
 
         f = torch.cat([
-            d1,
-            torch.nn.functional.upsample_bilinear(d2, scale_factor=2),
-            torch.nn.functional.upsample_bilinear(d3, scale_factor=4),
-            torch.nn.functional.upsample_bilinear(d4, scale_factor=8),
-            torch.nn.functional.upsample_bilinear(d5, scale_factor=16)
+            d2,
+            torch.nn.functional.interpolate(d3, scale_factor=2, mode='bilinear', align_corners=False),
+            torch.nn.functional.interpolate(d4, scale_factor=4, mode='bilinear', align_corners=False),
+            torch.nn.functional.interpolate(d5, scale_factor=8, mode='bilinear', align_corners=False)
         ], dim=1)
 
         return self.classifier(f)
