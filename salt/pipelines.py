@@ -74,8 +74,8 @@ def rotate(angle, interpolation, image):
         borderMode=cv2.BORDER_REFLECT_101
     )
 
-def reflect_pad(top, bottom, left, right, image):
-    return cv2.copyMakeBorder(image, top, bottom, left, right, borderType=cv2.BORDER_REFLECT_101)
+def edge_pad(top, bottom, left, right, image):
+    return cv2.copyMakeBorder(image, top, bottom, left, right, borderType=cv2.BORDER_REPLICATE)
 
 def blur(image):
     return cv2.GaussianBlur(image, (5, 5), 0)
@@ -168,7 +168,7 @@ class Fliplr:
             args['mask'] = fliplr(args['mask'])
         return args
 
-class ReflectPad:
+class EdgePad:
     def __init__(self, top, bottom, left, right):
         self.top = top
         self.bottom = bottom
@@ -176,9 +176,9 @@ class ReflectPad:
         self.right = right
 
     def __call__(self, args):
-        args['image'] = reflect_pad(self.top, self.bottom, self.left, self.right, args['image'])
+        args['image'] = edge_pad(self.top, self.bottom, self.left, self.right, args['image'])
         if args.get('mask') is not None:
-            args['mask'] = reflect_pad(self.top, self.bottom, self.left, self.right, args['mask'])
+            args['mask'] = edge_pad(self.top, self.bottom, self.left, self.right, args['mask'])
         return args
 
 class Normalize:
@@ -238,7 +238,7 @@ def train_pipeline(cache, mask_db, path):
             Blur()
         ])),
         Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
-        ReflectPad(13, 14, 13, 14),
+        EdgePad(13, 14, 13, 14),
         ChannelsFirst()
     ])({'image': image, 'mask': mask})
     return args['image'], args.get('mask')
@@ -247,7 +247,7 @@ def validation_pipeline(cache, mask_db, path):
     image, mask = read_image_and_mask_cached(cache, mask_db, (101, 101), path)
     args = Pipe([
         Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
-        ReflectPad(13, 14, 13, 14),
+        EdgePad(13, 14, 13, 14),
         ChannelsFirst()
     ])({'image': image, 'mask': mask})
     return args['image'], args.get('mask')
