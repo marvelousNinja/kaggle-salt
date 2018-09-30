@@ -1,9 +1,10 @@
 import cv2
 import numpy as np
 from albumentations import (Blur, Compose, ElasticTransform, GaussNoise,
-                            GridDistortion, HorizontalFlip, Normalize,
-                            PadIfNeeded, RandomBrightness, RandomGamma,
-                            RandomSizedCrop, ShiftScaleRotate)
+                            GridDistortion, HorizontalFlip, MedianBlur,
+                            MotionBlur, Normalize, OneOf, PadIfNeeded,
+                            RandomBrightness, RandomGamma, RandomSizedCrop,
+                            ShiftScaleRotate)
 
 from salt.utils import load_mask, read_image
 
@@ -36,14 +37,22 @@ class ChannelsFirst:
 def train_pipeline(cache, mask_db, path):
     image, mask = read_image_and_mask_cached(cache, mask_db, (101, 101), path)
     args = Compose([
-        HorizontalFlip(0.5),
-        ShiftScaleRotate(),
-        GridDistortion(),
-        GaussNoise(),
-        RandomBrightness(),
-        ElasticTransform(),
-        Blur(),
-        RandomGamma(),
+        HorizontalFlip(p=0.5),
+        ShiftScaleRotate(rotate_limit=15, p=0.2),
+        GaussNoise(p=0.2),
+        OneOf([
+            RandomBrightness(limit=0.4),
+            RandomGamma(),
+        ], p=0.5),
+        OneOf([
+            Blur(),
+            MedianBlur(),
+            MotionBlur()
+        ], p=0.2),
+        #OneOf([
+        #    ElasticTransform(alpha=10, sigma=10, alpha_affine=10),
+        #    GridDistortion()
+        #], p=0.2),
         RandomSizedCrop(min_max_height=(70, 100), height=128, width=128),
         Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
         PadIfNeeded(128, 128, cv2.BORDER_REPLICATE),
