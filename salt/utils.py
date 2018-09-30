@@ -5,6 +5,29 @@ import numpy as np
 import pandas as pd
 import torch
 
+def get_area_stratified_split(mask_db, num_folds):
+    mask_db['area'] = mask_db['rle_mask'].fillna('0 0').str.split().apply(lambda v: np.array(v).astype(np.int)[1::2].sum())
+    mask_db['label'] = 0
+    mask_db.loc[mask_db['area'].between(1, 300), 'label'] = 1
+    mask_db.loc[mask_db['area'].between(301, 1000), 'label'] = 2
+    mask_db.loc[mask_db['area'].between(1001, 3000), 'label'] = 3
+    mask_db.loc[mask_db['area'].between(3001, 9000), 'label'] = 4
+    mask_db.loc[mask_db['area'] > 9000, 'label'] = 5
+    return get_stratified_split(mask_db['id'].values, mask_db['area'].values, num_folds)
+
+def get_stratified_split(records, labels, num_folds):
+    np.random.seed(1991)
+    indicies = np.random.permutation(len(records))
+    records = records[indicies]
+    labels = labels[indicies]
+    np.random.shuffle(labels)
+    fold_ids = np.zeros(len(labels))
+    for label in labels:
+        label_mask = labels == label
+        num_samples = (label_mask).sum()
+        fold_ids[label_mask] = np.random.randint(0, num_folds, num_samples)
+    return records, fold_ids
+
 def get_train_validation_holdout_split(records):
     np.random.seed(1991)
     np.random.shuffle(records)

@@ -34,7 +34,19 @@ def compute_loss(outputs, labels):
     # return lovasz_hinge_loss(outputs, labels)
     return torch.nn.functional.binary_cross_entropy_with_logits(outputs.squeeze(), labels)
 
-def fit(num_epochs=100, limit=None, validation_limit=None, batch_size=16, lr=.005, checkpoint_path=None, telegram=False, visualize=False):
+def fit(
+        num_epochs=100,
+        limit=None,
+        validation_limit=None,
+        batch_size=16,
+        lr=.005,
+        checkpoint_path=None,
+        telegram=False,
+        visualize=False,
+        num_folds=5,
+        train_fold_ids=[0, 1, 2, 3],
+        validation_fold_ids=[4]
+    ):
     torch.backends.cudnn.benchmark = True
     np.random.seed(1991)
     logger, image_logger = make_loggers(telegram)
@@ -46,7 +58,7 @@ def fit(num_epochs=100, limit=None, validation_limit=None, batch_size=16, lr=.00
 
     model = as_cuda(model)
     optimizer = torch.optim.SGD(filter(lambda param: param.requires_grad, model.parameters()), lr, weight_decay=1e-3, momentum=0.9, nesterov=True)
-    train_generator = get_train_generator(batch_size, limit)
+    train_generator = get_train_generator(num_folds, train_fold_ids, batch_size, limit)
     callbacks = [
         ModelCheckpoint(model, 'linknet', 'val_mean_ap', 'max', logger),
         # CyclicLR(step_size=len(train_generator) * 2, min_lr=0.0001, max_lr=0.005, optimizer=optimizer, logger=logger),
@@ -68,7 +80,7 @@ def fit(num_epochs=100, limit=None, validation_limit=None, batch_size=16, lr=.00
     fit_model(
         model=model,
         train_generator=train_generator,
-        validation_generator=get_validation_generator(batch_size, validation_limit),
+        validation_generator=get_validation_generator(num_folds, validation_fold_ids, batch_size, validation_limit),
         optimizer=optimizer,
         loss_fn=compute_loss,
         num_epochs=num_epochs,
