@@ -11,7 +11,7 @@ from salt.utils import from_numpy
 from salt.utils import get_images_in
 from salt.utils import to_numpy
 
-def predict(checkpoint_path, batch_size=1, limit=None):
+def predict(checkpoint_path, batch_size=1, limit=None, tta=False):
     model = load_checkpoint(checkpoint_path)
     model = as_cuda(model)
     torch.set_grad_enabled(False)
@@ -23,6 +23,9 @@ def predict(checkpoint_path, batch_size=1, limit=None):
     for inputs, _ in tqdm(test_generator, total=len(test_generator)):
         inputs = from_numpy(inputs)
         outputs = model(inputs)
+        if tta:
+            flipped_outputs = model(inputs.flip(dims=(3,)))
+            outputs  = (outputs + flipped_outputs.flip(dims=(3,))) / 2
         # TODO AS: Ignoring reflected regions, since they are cut on submission
         masks = to_numpy(torch.sigmoid(outputs)[:, 0, :, :].round().long())[:, 13:-14, 13:-14]
         for mask in masks:
