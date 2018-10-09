@@ -21,7 +21,7 @@ def lovasz_hinge_loss(logits, labels, average=True):
     for sample_logits, sample_labels in zip(logits, labels):
         losses.append(flat_lovasz_hinge_loss(sample_logits.view(-1), sample_labels.view(-1)))
     if average: return sum(losses) / len(losses)
-    return losses
+    return torch.cat(losses)
 
 def focal_loss(logits, labels, average=True):
     bce = torch.nn.functional.binary_cross_entropy_with_logits(logits, labels[:, None], reduction='none')
