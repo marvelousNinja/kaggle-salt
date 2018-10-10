@@ -53,6 +53,9 @@ def fit_model(
             all_gt.append(gt)
             inputs, gt = from_numpy(inputs), from_numpy(gt)
             outputs = model(inputs)
+            # TODO AS: Extract as cmd opt
+            flipped_outputs = model(inputs.flip(dims=(3,)))
+            outputs  = (outputs + flipped_outputs.flip(dims=(3,))) / 2
             logs['val_loss'] += loss_fn(outputs, gt).data[0]
             for func in metrics: logs[f'val_{func.__name__}'] += func(outputs.detach(), gt)
 
