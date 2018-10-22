@@ -6,27 +6,93 @@ import pandas as pd
 import torch
 
 def get_area_stratified_split(mask_db, num_folds):
-    mask_db['area'] = mask_db['rle_mask'].fillna('0 0').str.split().apply(lambda v: np.array(v).astype(np.int)[1::2].sum())
-    mask_db['label'] = 0
-    mask_db.loc[mask_db['area'].between(1, 300), 'label'] = 1
-    mask_db.loc[mask_db['area'].between(301, 1000), 'label'] = 2
-    mask_db.loc[mask_db['area'].between(1001, 3000), 'label'] = 3
-    mask_db.loc[mask_db['area'].between(3001, 9000), 'label'] = 4
-    mask_db.loc[mask_db['area'] > 9000, 'label'] = 5
-    return get_stratified_split(mask_db['id'].values, mask_db['area'].values, num_folds)
+    blacklist = [
+        '05b69f83bf',
+        '0d8ed16206',
+        '10833853b3',
+        '135ae076e9',
+        '1a7f8bd454',
+        '1b0d74b359',
+        '1c0b2ceb2f',
+        '1efe1909ed',
+        '1f0b16aa13',
+        '1f73caa937',
+        '20ed65cbf8',
+        '287b0f197f',
+        '2fb6791298',
+        '37df75f3a2',
+        '3ee4de57f8',
+        '3ff3881428',
+        '40ccdfe09d',
+        '423ae1a09c',
+        '4f30a97219',
+        '51870e8500',
+        '573f9f58c4',
+        '58789490d6',
+        '590f7ae6e7',
+        '5aa0015d15',
+        '5edb37f5a8',
+        '5ff89814f5',
+        '6b95bc6c5f',
+        '6f79e6d54b',
+        '755c1e849f',
+        '762f01c185',
+        '7769e240f0',
+        '808cbefd71',
+        '8c1d0929a2',
+        '8ee20f502e',
+        '9260b4f758',
+        '96049af037',
+        '96d1d6138a',
+        '97515a958d',
+        '99909324ed',
+        '9aa65d393a',
+        'a2b7af2907',
+        'a31e485287',
+        'a3e0a0c779',
+        'a48b9989ac',
+        'a536f382ec',
+        'a56e87840f',
+        'a8be31a3c1',
+        'a9e940dccd',
+        'a9fd8e2a06',
+        'aa97ecda8e',
+        'acb95dd7c9',
+        'b11110b854',
+        'b552fb0d9d',
+        'b637a7621a',
+        'b8c3ca0fab',
+        'b9bf0422a6',
+        'bedb558d15',
+        'c1c6a1ebad',
+        'c20069b110',
+        'c3589905df',
+        'c8404c2d4f',
+        'cc15d94784',
+        'd0244d6c38',
+        'd0e720b57b',
+        'd1665744c3',
+        'd2e14828d5',
+        'd6437d0c25',
+        'd8bed49320',
+        'd93d713c55',
+        'dcca025cc6',
+        'e0da89ce88',
+        'e51599adb5',
+        'e7da2d7800',
+        'e82421363e',
+        'ec542d0719',
+        'f0190fc4b4',
+        'f26e6cffd6',
+        'f2c869e655',
+        'f9fc7746fb',
+        'ff9d2e9ba7',
+    ]
 
-def get_stratified_split(records, labels, num_folds):
+    mask_db = mask_db[~mask_db['id'].isin(blacklist)].copy()
     np.random.seed(1991)
-    indicies = np.random.permutation(len(records))
-    records = records[indicies]
-    labels = labels[indicies]
-    np.random.shuffle(labels)
-    fold_ids = np.zeros(len(labels))
-    for label in labels:
-        label_mask = labels == label
-        num_samples = (label_mask).sum()
-        fold_ids[label_mask] = np.random.randint(0, num_folds, num_samples)
-    return records, fold_ids
+    mask_db['fold_id'] = np.random.randint(0, num_folds, len(mask_db))
+    return mask_db['id'].values, mask_db['fold_id'].values
 
 def get_train_validation_holdout_split(records):
     np.random.seed(1991)
