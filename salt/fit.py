@@ -22,7 +22,7 @@ from salt.losses import lovasz_hinge_loss
 from salt.losses import focal_loss
 from salt.metrics import mean_iou
 from salt.metrics import mean_ap
-from salt.models.linknet import Linknet
+from salt.models.devilnet import Devilnet
 from salt.training import fit_model
 from salt.utils import as_cuda
 
@@ -30,9 +30,16 @@ def loss_surface_fn(outputs, labels):
     return torch.nn.functional.binary_cross_entropy_with_logits(outputs.squeeze(), labels, reduction='none')
 
 def compute_loss(outputs, labels):
-    # return focal_loss(outputs, labels)
-    # return lovasz_hinge_loss(outputs, labels)
-    return torch.nn.functional.binary_cross_entropy_with_logits(outputs.squeeze(), labels)
+    true_borders = labels[:, 1, :, :]
+    pred_borders = outputs[:, 1, :, :]
+    border_loss = torch.nn.functional.binary_cross_entropy_with_logits(pred_borders, true_borders)
+    mask_present = (true_borders.sum(dim=(1, 2)) > 0).nonzero().view(-1)
+    outputs, labels = outputs[mask_present], labels[mask_present]
+    if len(outputs) > 0:
+        mask_loss = lovasz_hinge_loss(outputs[:, [0], :, :], labels[:, 0, :, :])
+    else:
+        mask_loss = 0
+    return 10 * border_loss + mask_loss
 
 def fit(
         num_epochs=100,
@@ -54,7 +61,7 @@ def fit(
     if checkpoint_path:
         model = load_checkpoint(checkpoint_path)
     else:
-        model = Linknet(1)
+        model = Devilnet(2)
 
     model = as_cuda(model)
     optimizer = torch.optim.SGD(filter(lambda param: param.requires_grad, model.parameters()), lr, weight_decay=1e-3, momentum=0.9, nesterov=True)
@@ -64,8 +71,8 @@ def fit(
         # CyclicLR(step_size=len(train_generator) * 2, min_lr=0.0001, max_lr=0.005, optimizer=optimizer, logger=logger),
         # LRSchedule(optimizer, [(0, 0.003), (2, 0.01), (12, 0.001), (17, 0.0001)], logger),
         # LRRangeTest(0.00001, 1.0, 20000, optimizer, image_logger),
-        # LROnPlateau('val_loss', optimizer, mode='min', factor=0.5, patience=6, min_lr=1e-8, logger=logger),
-        ConfusionMatrix([0, 1], logger)
+        LROnPlateau('val_mean_ap', optimizer, mode='max', factor=0.5, patience=8, min_lr=0, logger=logger),
+        # ConfusionMatrix([0, 1], logger)
     ]
 
     if visualize:

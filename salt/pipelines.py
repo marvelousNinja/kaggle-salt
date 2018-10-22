@@ -32,11 +32,22 @@ def read_image_and_mask_cached(cache, mask_db, target_shape, path):
 class ChannelsFirst:
     def __call__(self, **args):
         args['image'] = channels_first(args['image'])
+        args['mask'] = channels_first(args['mask'])
+        return args
+
+class LabelMaskBorder:
+    def __call__(self, **args):
+        mask = args.get('mask')
+        if mask is None: return args
+        kernel = np.ones((5, 5), np.uint8)
+        borders = cv2.morphologyEx(mask, cv2.MORPH_GRADIENT, kernel)
+        args['mask'] = np.dstack([mask, borders])
         return args
 
 def train_pipeline(cache, mask_db, path):
     image, mask = read_image_and_mask_cached(cache, mask_db, (101, 101), path)
     args = Compose([
+        LabelMaskBorder(),
         HorizontalFlip(p=0.5),
         OneOf([
             ShiftScaleRotate(rotate_limit=15, border_mode=cv2.BORDER_REPLICATE),
@@ -65,6 +76,7 @@ def train_pipeline(cache, mask_db, path):
 def validation_pipeline(cache, mask_db, path):
     image, mask = read_image_and_mask_cached(cache, mask_db, (101, 101), path)
     args = Compose([
+        LabelMaskBorder(),
         Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
         PadIfNeeded(128, 128, cv2.BORDER_REPLICATE),
         ChannelsFirst()
