@@ -39,6 +39,8 @@ class DataGenerator:
             split_outputs = list(zip(*batch))
             yield list(map(np.stack, split_outputs))
 
+        pool.close()
+
     def __len__(self):
         num_batches = len(self.records) / self.batch_size
         if self.drop_last:
