@@ -1,5 +1,6 @@
 import torch
 import torchvision
+from salt.coord_conv import CoordConv
 
 class GlobalAvgPool2d(torch.nn.Module):
     def forward(self, x):
@@ -99,7 +100,7 @@ class Devilnet(torch.nn.Module):
         ])
 
         self.classifier = torch.nn.Sequential(
-            torch.nn.Conv2d(512, num_classes, 1)
+            CoordConv(512, num_classes, with_r=True, kernel_size=1)
         )
 
     def forward(self, x):
